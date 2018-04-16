@@ -44,25 +44,28 @@ open class MessagesCollectionViewFlowLayout: UICollectionViewFlowLayout {
     ///
     /// The default value of this property is 500.
     open var attributesCacheMaxSize: Int = 500
-    
+
     /// A type property representing the `MessagesCollectionViewLayoutAttributes` to be used.
     open override class var layoutAttributesClass: AnyClass {
         return MessagesCollectionViewLayoutAttributes.self
     }
-    
+
+    open var urlImageWidth = 200
+    open var urlImageHeight = 200
+
     // MARK: - Properties [Private]
-    
+
     /// Font to be used by `TextMessageCell` for `MessageData.emoji(String)` case.
     ///
     /// The default value of this property is 2x the `messageLabelFont`.
     private var emojiLabelFont: UIFont
 
     typealias MessageID = String
-    
+
     /// The cache for `MessageIntermediateLayoutAttributes`.
     /// The key is the `messageId` of the `MessageType`.
     fileprivate var intermediateAttributesCache: [MessageID: MessageIntermediateLayoutAttributes] = [:]
-    
+
     /// Convenience property for accessing the layout object's `MessagesCollectionView`.
     fileprivate var messagesCollectionView: MessagesCollectionView {
         guard let messagesCollectionView = collectionView as? MessagesCollectionView else {
@@ -123,7 +126,7 @@ open class MessagesCollectionViewFlowLayout: UICollectionViewFlowLayout {
     }
 
     // MARK: - Methods [Public]
-    
+
     /// Removes the cached layout information for a given `MessageType` using the `messageId`.
     ///
     /// - Parameters:
@@ -131,7 +134,7 @@ open class MessagesCollectionViewFlowLayout: UICollectionViewFlowLayout {
     public func removeCachedAttributes(for message: MessageType) {
         removeCachedAttributes(for: message.messageId)
     }
-    
+
     /// Removes the cached layout information for a `MessageType` given its `messageId`.
     ///
     /// - Parameters:
@@ -139,12 +142,12 @@ open class MessagesCollectionViewFlowLayout: UICollectionViewFlowLayout {
     public func removeCachedAttributes(for messageId: String) {
         intermediateAttributesCache.removeValue(forKey: messageId)
     }
-    
+
     /// Removes the cached layout information for all `MessageType`s.
     public func removeAllCachedAttributes() {
         intermediateAttributesCache.removeAll()
     }
-    
+
     open override func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
         if collectionView?.bounds.width != newBounds.width {
             removeAllCachedAttributes()
@@ -153,7 +156,7 @@ open class MessagesCollectionViewFlowLayout: UICollectionViewFlowLayout {
             return false
         }
     }
-    
+
     open override func invalidationContext(forBoundsChange newBounds: CGRect) -> UICollectionViewLayoutInvalidationContext {
         let context = super.invalidationContext(forBoundsChange: newBounds)
         guard let flowLayoutContext = context as? UICollectionViewFlowLayoutInvalidationContext else { return context }
@@ -185,7 +188,7 @@ open class MessagesCollectionViewFlowLayout: UICollectionViewFlowLayout {
         return attributes
 
     }
-    
+
     /// The size for the `MessageCollectionViewCell` considering all of the cell's contents.
     ///
     /// - Parameters:
@@ -200,82 +203,82 @@ open class MessagesCollectionViewFlowLayout: UICollectionViewFlowLayout {
 // MARK: - Calculating MessageIntermediateLayoutAttributes
 
 fileprivate extension MessagesCollectionViewFlowLayout {
-    
+
     /// Returns the cached `MessageIntermediateLayoutAttributes` for a given `IndexPath` (if any).
     /// If no cached attributes exist, new attributes will be created.
     /// - Parameters:
     ///   - indexPath: The `IndexPath` used to retrieve the `MessageType`.
     func messageIntermediateLayoutAttributes(for indexPath: IndexPath) -> MessageIntermediateLayoutAttributes {
-        
+
         let message = messagesDataSource.messageForItem(at: indexPath, in: messagesCollectionView)
-        
+
         if let intermediateAttributes = intermediateAttributesCache[message.messageId] {
             return intermediateAttributes
         } else {
             let newAttributes = createMessageIntermediateLayoutAttributes(for: message, at: indexPath)
 
             let shouldCache = messagesLayoutDelegate.shouldCacheLayoutAttributes(for: message) && intermediateAttributesCache.count < attributesCacheMaxSize
-            
+
             if shouldCache {
                 intermediateAttributesCache[message.messageId] = newAttributes
             }
             return newAttributes
         }
-        
+
     }
-    
+
     /// Returns newly created `MessageIntermediateAttributes` for a given `MessageType` and `IndexPath`.
     ///
     /// - Parameters:
     ///   - message: The `MessageType` representing the attributes.
     ///   - indexPath: The current `IndexPath` of the `MessageCollectionViewCell`.
     func createMessageIntermediateLayoutAttributes(for message: MessageType, at indexPath: IndexPath) -> MessageIntermediateLayoutAttributes {
-        
+
         let attributes = MessageIntermediateLayoutAttributes(message: message, indexPath: indexPath)
-        
+
         // None of these are dependent on other attributes
         attributes.avatarPosition = avatarPosition(for: attributes)
         attributes.avatarSize = avatarSize(for: attributes)
         attributes.messageContainerPadding = messageContainerPadding(for: attributes)
         attributes.messageLabelInsets = messageLabelInsets(for: attributes)
-        
+
         // MessageContainerView
         attributes.messageContainerMaxWidth = messageContainerMaxWidth(for: attributes)
         attributes.messageContainerSize = messageContainerSize(for: attributes)
-        
+
         // Cell Bottom Label
         attributes.bottomLabelAlignment = cellBottomLabelAlignment(for: attributes)
         attributes.bottomLabelMaxWidth = cellBottomLabelMaxWidth(for: attributes)
         attributes.bottomLabelSize = cellBottomLabelSize(for: attributes)
-        
+
         // Cell Top Label
         attributes.topLabelAlignment = cellTopLabelAlignment(for: attributes)
         attributes.topLabelMaxWidth = cellTopLabelMaxWidth(for: attributes)
         attributes.topLabelSize = cellTopLabelSize(for: attributes)
-        
+
         // Cell Height
         attributes.itemHeight = cellHeight(for: attributes)
-        
+
         return attributes
     }
-    
+
     /// Configures the `MessagesCollectionViewLayoutAttributes` by applying the layout information
     /// from `MessageIntermediateLayoutAttributes` and calculating the origins of the cell's contents.
     ///
     /// - Parameters:
     ///   - attributes: The `MessageCollectionViewLayoutAttributes` to apply the layout information to.
     private func configure(attributes: MessagesCollectionViewLayoutAttributes) {
-        
+
         let intermediateAttributes = messageIntermediateLayoutAttributes(for: attributes.indexPath)
-        
+
         intermediateAttributes.cellFrame = attributes.frame
-        
+
         attributes.messageContainerFrame = intermediateAttributes.messageContainerFrame
         attributes.topLabelFrame = intermediateAttributes.topLabelFrame
         attributes.bottomLabelFrame = intermediateAttributes.bottomLabelFrame
         attributes.avatarFrame = intermediateAttributes.avatarFrame
         attributes.messageLabelInsets = intermediateAttributes.messageLabelInsets
-        
+
         switch intermediateAttributes.message.data {
         case .emoji:
             attributes.messageLabelFont = emojiLabelFont
@@ -296,16 +299,16 @@ fileprivate extension MessagesCollectionViewFlowLayout {
 // MARK: - Avatar Calculations [ A - C ]
 
 fileprivate extension MessagesCollectionViewFlowLayout {
-    
+
     // A
-    
+
     /// Returns the `AvatarPosition` for a given `MessageType`.
     ///
     /// - Parameters:
     ///   - attributes: The `MessageIntermediateLayoutAttributes` containing the `MessageType` object.
     func avatarPosition(for attributes: MessageIntermediateLayoutAttributes) -> AvatarPosition {
         var position = messagesLayoutDelegate.avatarPosition(for: attributes.message, at: attributes.indexPath, in: messagesCollectionView)
-        
+
         switch position.horizontal {
         case .cellTrailing, .cellLeading:
             break
@@ -317,7 +320,7 @@ fileprivate extension MessagesCollectionViewFlowLayout {
     }
 
     // B
-    
+
     /// Returns the size of the `AvatarView` for a given `MessageType`.
     ///
     /// - Parameters:
@@ -325,53 +328,53 @@ fileprivate extension MessagesCollectionViewFlowLayout {
     func avatarSize(for attributes: MessageIntermediateLayoutAttributes) -> CGSize {
         return messagesLayoutDelegate.avatarSize(for: attributes.message, at: attributes.indexPath, in: messagesCollectionView)
     }
-    
+
 }
 
 // MARK: - General Label Size Calculations
 
 private extension MessagesCollectionViewFlowLayout {
-    
+
     /// Returns the size required fit a NSAttributedString considering a constrained max width.
     ///
     /// - Parameters:
     ///   - attributedText: The `NSAttributedString` used to calculate a size that fits.
     ///   - maxWidth: The max width available for the label.
     func labelSize(for attributedText: NSAttributedString, considering maxWidth: CGFloat) -> CGSize {
-        
+
         let estimatedHeight = attributedText.height(considering: maxWidth)
         let estimatedWidth = attributedText.width(considering: estimatedHeight)
-        
+
         let finalHeight = estimatedHeight.rounded(.up)
         let finalWidth = estimatedWidth > maxWidth ? maxWidth : estimatedWidth.rounded(.up)
-        
+
         return CGSize(width: finalWidth, height: finalHeight)
     }
-    
+
     /// Returns the size required to fit a String considering a constrained max width.
     ///
     /// - Parameters:
     ///   - text: The `String` used to calculate a size that fits.
     ///   - maxWidth: The max width available for the label.
     func labelSize(for text: String, considering maxWidth: CGFloat, and font: UIFont) -> CGSize {
-        
+
         let estimatedHeight = text.height(considering: maxWidth, and: font)
         let estimatedWidth = text.width(considering: estimatedHeight, and: font)
-        
+
         let finalHeight = estimatedHeight.rounded(.up)
         let finalWidth = estimatedWidth > maxWidth ? maxWidth : estimatedWidth.rounded(.up)
-        
+
         return CGSize(width: finalWidth, height: finalHeight)
     }
-    
+
 }
 
 // MARK: - MessageContainerView Calculations [ D - G ]
 
 private extension MessagesCollectionViewFlowLayout {
-    
+
     // D
-    
+
     /// Returns the padding to be used around the `MessageContainerView` for a given `MessageType`.
     ///
     /// - Parameters:
@@ -379,9 +382,9 @@ private extension MessagesCollectionViewFlowLayout {
     func messageContainerPadding(for attributes: MessageIntermediateLayoutAttributes) -> UIEdgeInsets {
         return messagesLayoutDelegate.messagePadding(for: attributes.message, at: attributes.indexPath, in: messagesCollectionView)
     }
-    
+
     // E
-    
+
     /// Returns the insets for the text of a `MessageLabel` in ` TextMessageCell`.
     ///
     /// - Parameters:
@@ -390,38 +393,38 @@ private extension MessagesCollectionViewFlowLayout {
         // Maybe check the message type here since insets only apply to text messages
         return messagesLayoutDelegate.messageLabelInset(for: attributes.message, at: attributes.indexPath, in: messagesCollectionView)
     }
-    
+
     // F
-    
+
     /// Returns the max available width for the `MessageContainerView`.
     ///
     /// - Parameters:
     ///   - attributes: The `MessageIntermediateLayoutAttributes` to consider when calculating the max width.
     func messageContainerMaxWidth(for attributes: MessageIntermediateLayoutAttributes) -> CGFloat {
-        
+
         switch attributes.message.data {
         case .text, .attributedText:
             return itemWidth - attributes.avatarSize.width - attributes.messageHorizontalPadding - attributes.messageLabelHorizontalInsets
         default:
             return itemWidth - attributes.avatarSize.width - attributes.messageHorizontalPadding
         }
-        
+
     }
-    
+
     // G
-    
+
     /// Returns the size of the `MessageContainerView`
     ///
     /// - Parameters:
     ///   - attributes: The `MessageIntermediateLayoutAttributes` to consider when calculating the `MessageContainerView` size.
     func messageContainerSize(for attributes: MessageIntermediateLayoutAttributes) -> CGSize {
-        
+
         let message = attributes.message
         let indexPath = attributes.indexPath
         let maxWidth = attributes.messageContainerMaxWidth
-        
+
         var messageContainerSize: CGSize = .zero
-        
+
         switch attributes.message.data {
         case .text(let text):
             messageContainerSize = labelSize(for: text, considering: maxWidth, and: messageLabelFont)
@@ -439,24 +442,26 @@ private extension MessagesCollectionViewFlowLayout {
             let width = messagesLayoutDelegate.widthForMedia(message: message, at: indexPath, with: maxWidth, in: messagesCollectionView)
             let height = messagesLayoutDelegate.heightForMedia(message: message, at: indexPath, with: maxWidth, in: messagesCollectionView)
             messageContainerSize = CGSize(width: width, height: height)
+        case .urlPhoto:
+            messageContainerSize = CGSize(width: urlImageWidth, height: urlImageHeight)
         case .location:
             let width = messagesLayoutDelegate.widthForLocation(message: message, at: indexPath, with: maxWidth, in: messagesCollectionView)
             let height = messagesLayoutDelegate.heightForLocation(message: message, at: indexPath, with: maxWidth, in: messagesCollectionView)
             messageContainerSize = CGSize(width: width, height: height)
         }
-        
+
         return messageContainerSize
-        
+
     }
-    
+
 }
 
 // MARK: - Cell Bottom Label Calculations  [ I - K ]
 
 private extension MessagesCollectionViewFlowLayout {
-    
+
     // I
-    
+
     /// Returns the alignment of the cell's bottom label.
     ///
     /// - Parameters:
@@ -464,15 +469,15 @@ private extension MessagesCollectionViewFlowLayout {
     func cellBottomLabelAlignment(for attributes: MessageIntermediateLayoutAttributes) -> LabelAlignment {
         return messagesLayoutDelegate.cellBottomLabelAlignment(for: attributes.message, at: attributes.indexPath, in: messagesCollectionView)
     }
-    
+
     // J
-    
+
     /// Returns the max available width for the cell's bottom label considering the specified layout information.
     ///
     /// - Parameters:
     ///   - attributes: The `MessageIntermediateLayoutAttributes` to consider when calculating the max width.
     func cellBottomLabelMaxWidth(for attributes: MessageIntermediateLayoutAttributes) -> CGFloat {
-        
+
         let labelHorizontal = attributes.bottomLabelAlignment
         let avatarHorizontal = attributes.avatarPosition.horizontal
         let avatarVertical = attributes.avatarPosition.vertical
@@ -505,19 +510,19 @@ private extension MessagesCollectionViewFlowLayout {
         case (_, .natural):
             fatalError(MessageKitError.avatarPositionUnresolved)
         }
-        
+
     }
-    
+
     // K
-    
+
     /// Returns the size of the cell's bottom label considering the specified layout information.
     ///
     /// - Parameters:
     ///   - attributes: The `MessageIntermediateLayoutAttributes` to consider when calculating label's size.
     func cellBottomLabelSize(for attributes: MessageIntermediateLayoutAttributes) -> CGSize {
-        
+
         let text = messagesDataSource.cellBottomLabelAttributedText(for: attributes.message, at: attributes.indexPath)
-        
+
         guard let bottomLabelText = text else { return .zero }
         return labelSize(for: bottomLabelText, considering: attributes.bottomLabelMaxWidth)
     }
@@ -527,9 +532,9 @@ private extension MessagesCollectionViewFlowLayout {
 // MARK: - Cell Top Label Size Calculations [ L - N ]
 
 private extension MessagesCollectionViewFlowLayout {
-    
+
     // L
-    
+
     /// Returns the alignment of the cell's top label.
     ///
     /// - Parameters:
@@ -537,20 +542,20 @@ private extension MessagesCollectionViewFlowLayout {
     func cellTopLabelAlignment(for attributes: MessageIntermediateLayoutAttributes) -> LabelAlignment {
         return messagesLayoutDelegate.cellTopLabelAlignment(for: attributes.message, at: attributes.indexPath, in: messagesCollectionView)
     }
-    
+
     // M
-    
+
     /// Returns the max available width for the cell's top label considering the specified layout information.
     ///
     /// - Parameters:
     ///   - attributes: The `MessageIntermediateLayoutAttributes` to consider when calculating the max width.
     func cellTopLabelMaxWidth(for attributes: MessageIntermediateLayoutAttributes) -> CGFloat {
-        
+
         let labelHorizontal = attributes.topLabelAlignment
         let avatarHorizontal = attributes.avatarPosition.horizontal
         let avatarVertical = attributes.avatarPosition.vertical
         let avatarWidth = attributes.avatarSize.width
-        
+
         switch (labelHorizontal, avatarHorizontal) {
 
         case (.cellLeading, _), (.cellTrailing, _):
@@ -578,41 +583,41 @@ private extension MessagesCollectionViewFlowLayout {
         case (_, .natural):
             fatalError(MessageKitError.avatarPositionUnresolved)
         }
-        
+
     }
-    
+
     // N
-    
+
     /// Returns the size of the cell's top label considering the specified layout information.
     ///
     /// - Parameters:
     ///   - attributes: The `MessageIntermediateLayoutAttributes` to consider when calculating label's size.
     func cellTopLabelSize(for attributes: MessageIntermediateLayoutAttributes) -> CGSize {
-        
+
         let text = messagesDataSource.cellTopLabelAttributedText(for: attributes.message, at: attributes.indexPath)
-        
+
         guard let topLabelText = text else { return .zero }
 
         return labelSize(for: topLabelText, considering: attributes.topLabelMaxWidth)
 
     }
-    
+
 }
 
 // MARK: - Cell Sizing
 
 private extension MessagesCollectionViewFlowLayout {
-    
+
     // P
-    
+
     /// The height of a `MessageCollectionViewCell`.
     ///
     /// - Parameters:
     ///   - attributes: The `MessageIntermediateLayoutAttributes` to use to determine the height of the cell.
     private func cellHeight(for attributes: MessageIntermediateLayoutAttributes) -> CGFloat {
-        
+
         var cellHeight: CGFloat = 0
-        
+
         switch attributes.avatarPosition.vertical {
         case .cellTop:
             cellHeight += max(attributes.avatarSize.height, attributes.topLabelSize.height)
@@ -630,8 +635,9 @@ private extension MessagesCollectionViewFlowLayout {
             cellHeight += attributes.topLabelSize.height
             cellHeight += attributes.bottomLabelSize.height
         }
-        
+
         return cellHeight
     }
-    
+
 }
+

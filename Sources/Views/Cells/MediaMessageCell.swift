@@ -61,8 +61,35 @@ open class MediaMessageCell: MessageCollectionViewCell {
         case .video(_, let image):
             imageView.image = image
             playButtonView.isHidden = false
+        case .urlPhoto(let url):
+            imageView.loadImage(url: url)
+            imageView.contentMode = .redraw
+            playButtonView.isHidden = true
         default:
             break
         }
     }
 }
+
+extension UIImageView {
+    // load url image
+    func loadImage(url: URL){
+        let req = URLRequest(url: url,
+                             cachePolicy: .returnCacheDataElseLoad,
+                             timeoutInterval: 60 * 10); // cache time
+        let conf =  URLSessionConfiguration.default;
+        let session = URLSession(configuration: conf, delegate: nil, delegateQueue: OperationQueue.main);
+
+        session.dataTask(with: req, completionHandler:
+            { (data, resp, err) in
+                if((err) == nil){ //Success
+                    let image = UIImage(data:data!)
+                    self.image = image;
+
+                }else{ //Error
+                    print("AsyncImageView:Error \(err?.localizedDescription)");
+                }
+        }).resume();
+    }
+}
+

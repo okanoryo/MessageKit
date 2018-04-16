@@ -43,6 +43,9 @@ public enum MessageData {
     /// A photo message.
     case photo(UIImage)
 
+    /// A url photo message.
+    case urlPhoto(URL)
+
     /// A video message.
     case video(file: URL, thumbnail: UIImage)
 
