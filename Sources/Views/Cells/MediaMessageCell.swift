@@ -62,7 +62,6 @@ open class MediaMessageCell: MessageCollectionViewCell {
             imageView.image = image
             playButtonView.isHidden = false
         case .urlPhoto(let url):
-            imageView.loadImage(url: url)
             imageView.contentMode = .scaleAspectFill
             playButtonView.isHidden = true
         default:
