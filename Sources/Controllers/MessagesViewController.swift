@@ -117,7 +117,7 @@ open class MessagesViewController: UIViewController {
     /// Sets the delegate and dataSource of the messagesCollectionView property.
     private func setupDelegates() {
         messagesCollectionView.delegate = self
-        messagesCollectionView.dataSource = self
+//        messagesCollectionView.dataSource = self
     }
 
     /// Adds the messagesCollectionView to the controllers root view.
